@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="Ubuntu_18.04_PintOS" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" showDifferentInSync="false" showNewOnSourceInSync="false" showNewOnTargetInSync="false">
+    <option name="confirmBeforeUploading" value="false" />
+    <serverData>
+      <paths name="Ubuntu_18.04_PintOS">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/PintOS" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
