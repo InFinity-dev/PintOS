@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="e3426218-2610-4223-a6dc-93aebf64182a" name="Ubuntu_18.04_PintOS">
-        <fileTransfer rootFolder="/home/infinity" accessType="SFTP" host="10.211.55.8" port="22" sshConfigId="fb9ca720-187b-494b-99e4-3fbe9133d15e" sshConfig="infinity@10.211.55.8:22 password">
+        <fileTransfer rootFolder="/home/infinity" accessType="SFTP" host="10.211.55.3" port="22" sshConfigId="fb9ca720-187b-494b-99e4-3fbe9133d15e" sshConfig="infinity@10.211.55.3:22 password">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>

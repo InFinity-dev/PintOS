@@ -92,6 +92,12 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 
+    // ******************************LINE ADDED****************************** //
+    // Project 1 : Thread - Busy Waiting -> Sleep-Awake
+    // 잠드는 프로세스가 꺠어날 tick을 저장할 변수
+    int64_t wakeup_tick;
+    // *************************ADDED LINE ENDS HERE************************* //
+
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -142,5 +148,13 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
 void do_iret (struct intr_frame *tf);
+
+// ******************************LINE ADDED****************************** //
+// Project 1 : Thread - Busy Waiting -> Sleep-Awake
+void thread_sleep(int64_t ticks);
+void thread_awake(int64_t ticks);
+void update_next_tick_to_awake(int64_t ticks);
+int64_t get_next_tick_to_awake(void);
+// *************************ADDED LINE ENDS HERE************************* //
 
 #endif /* threads/thread.h */

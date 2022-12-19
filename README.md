@@ -312,11 +312,12 @@ chmod +x check.sh
 # ./check.sh
 # to use.
 
+```
+```
 # Add Lines for PintOS in Global bashrc
 cd ~
 sudo nano .bashrc
-```
-```
+
 ########## Custom Line Add After This ##########
 # PintOS
 source /home/<username>/<pintos-root-folder>/activate
