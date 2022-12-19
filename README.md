@@ -248,11 +248,11 @@ USERPROG=( args-none \
 make clean                                          # clean previous build
 
 ### 1. get dir ###
-echo "Enter project number to check"
-echo "1: THREADS"
-echo "2: USER PROGRAMS"
-echo "3: VIRTUAL MEMORY"
-echo "4: FILE SYSTEM"
+echo "Enter project number to check: "
+echo "    1: THREADS"
+echo "    2: USER PROGRAMS"
+echo "    3: VIRTUAL MEMORY"
+echo "    4: FILE SYSTEM"
 read PRJN                                           # get project number
 if [ $PRJN -lt 1 -o $PRJN -gt 4 ]                   # check input error
 then
@@ -281,7 +281,7 @@ echo "Enter a number of test case to check"
 i=0                                                 # show test case list
 while [ $i -lt ${#TST[@]} ]
 do
-    echo $(($i+1)): ${TST[$i]}
+    echo "    $(($i+1)): ${TST[$i]}"
     let i=i+1
 done
 read TSTN                                           # get test case number
@@ -293,11 +293,12 @@ fi
 CHK=${TST[$(($TSTN-1))]}
 cd $DIR/build
 echo "########## check $CHK ##########"
-pintos -v -k -T 60 -m 20 -- -q $CHK                 # run selected test case
+pintos -v -k -T 60 -m 20 -- -q run $CHK             # run selected test case
 # change flags if needed
 # usage: pintos [-h] [-v] [-k] [-T TIMEOUT] [-m MEMORY]
 #               [--fs-disk FS_DISK] [--swap-disk SWAP_DISK]
 #               [-p HOSTFNS] [-g GUESTFNS] [--mnts MNTS] [--gdb] [-t]
+echo ""
 
 ########################## SCRIPTS ENDS HERE ##########################
 
