@@ -70,7 +70,7 @@ static void schedule(void);
 static tid_t allocate_tid(void);
 
 // ******************************LINE ADDED****************************** //
-// Project 1 : Thread - Busy Waiting -> Sleep-Awake
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 
 // sleep_list 구조체는 Sleep 상태에 있는 스레드들을 저장해두는 리스트 구조체
 static struct list sleep_list;
@@ -78,8 +78,10 @@ static struct list sleep_list;
 // next_tick_to_awake 변수는 sleep_list에서 대기중인 스레드들의
 // wakeup_tick중 최솟값을 저장 즉, 다음에 wake 시켜야 할 tick 을 알려준다.
 // 한 마디로 다음 알람 시간 설정!
+// Fallback https://stackoverflow.com/questions/12468281/should-i-use-long-long-or-int64-t-for-portable-code
 static int64_t next_tick_to_awake;
 static long long next_tick_to_awake;
+
 // *************************ADDED LINE ENDS HERE************************* //
 
 /* Returns true if T appears to point to a valid thread. */
@@ -115,7 +117,7 @@ void thread_init(void) {
     ASSERT(intr_get_level() == INTR_OFF);
 
     // ******************************LINE ADDED****************************** //
-    // Project 1 : Thread - Busy Waiting -> Sleep-Awake
+    // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // sleep_list 초기화
     list_init (&sleep_list);
     // *************************ADDED LINE ENDS HERE************************* //
@@ -142,8 +144,7 @@ void thread_init(void) {
 }
 
 // ******************************LINE ADDED****************************** //
-// Project 1 : Thread - Busy Waiting -> Sleep-Awake
-
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 // 다음 Wake 해야 할 시간을 업데이트 해주는 함수
 void update_next_tick_to_awake(int64_t ticks){
     // next_tick_to_awake 변수는 다음에 Wake 해야 할 시간까지 offset을 저장하는 변수이다.
@@ -155,6 +156,7 @@ void update_next_tick_to_awake(int64_t ticks){
     // condition ? return_value_if_true : value_if_false
 }
 
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 // next_tick_to_awake 반환 함수
 int64_t get_next_tick_to_awake(void){
     return next_tick_to_awake;
@@ -202,6 +204,7 @@ int64_t get_next_tick_to_awake(void){
 //                    printf 함수는 내부적으로 출력과 관련된 semaphore를 조작하고 있기 때문에
 //                    다시 do_schedule을 호출하여 무한루프를 일으킬 위험이 있습니다.
 
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 void thread_sleep(int64_t ticks){
     struct thread *cur;
     enum intr_level old_level;
@@ -212,13 +215,11 @@ void thread_sleep(int64_t ticks){
 
     // ******************************INTERRUPT DISABLED****************************** //
     cur = thread_current();
-    // ASSERT FLAG : idle_thread는 재우면 안된다! 왜쨰서?
+    // ASSERT FLAG : idle_thread는 재우면 안된다!
     ASSERT(cur != idle_thread);
     // 예외 처리!
     if (cur != idle_thread){
-        /*printf("다음 깨울 시간 업데이트\n");*/
         update_next_tick_to_awake(cur -> wakeup_tick = ticks);
-        /*printf("sleep_list에 넣기!\n");*/
         list_push_back(&sleep_list, &cur->elem);
     }
 
@@ -231,6 +232,7 @@ void thread_sleep(int64_t ticks){
     // ******************************INTERRUPT RE-ENABLED****************************** //
 }
 
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 // sleep_list를 순회하며 sleep 중인 스레드 중 wakeup_tick 이 지난 스레드를 wake 하는 함수
 void thread_awake(int64_t wakeup_tick){
     next_tick_to_awake = INT64_MAX;
@@ -254,7 +256,11 @@ void thread_awake(int64_t wakeup_tick){
     }
 }
 
-// Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+// Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+// -> Test Case
+// threads/priority-change
+// threads/priority-fifo
+// threads/priority-preempt
 void test_max_priority(void){
 
     // 대기열이 비었을때 예외처리
@@ -270,21 +276,12 @@ void test_max_priority(void){
     if (t->priority > run_priority) {
         thread_yield();
     }
-
-
 }
 
+// Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
 // Compare Priority, 매개변수로 받은 스레드 두개를 비교하여,
-// 대상(target)스레드 우선순위가 더 높으면 TRUE(1)을 반환,
-// 비교(compare)스레드 우선순위가 더 높으면 FALSE(0)을 반환,
-
-/* Compares the value of two list elements A and B, given auxiliary data AUX.
- * 두개의 요소 A,B를 매개변수로 받아서 A가 B보다 작으면 TRUE, A가 B보다 크거나 같으면 FALSE 반환
- * Returns true if A is less than B, or false if A is greater than or equal to B.
-
-typedef bool list_less_func (const struct list_elem *a, const struct list_elem *b, void *aux);
-*/
-
+// 대상(target)스레드 우선순위가 더 높으면 TRUE(1)을 반환
+// 비교(compare)스레드 우선순위가 더 높으면 FALSE(0)을 반환
 bool cmp_priority(const struct list_elem *target, const struct list_elem *compare, void *aux UNUSED){
     struct thread *target_thread;
     struct thread *compare_thread;
@@ -296,7 +293,6 @@ bool cmp_priority(const struct list_elem *target, const struct list_elem *compar
     // target의 우선순위가 compare 작거나 같으면 FALSE (0)
     return((target_thread->priority)>(compare_thread->priority)) ? true:false;
 }
-
 // *************************ADDED LINE ENDS HERE************************* //
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -357,10 +353,12 @@ void thread_print_stats(void) {
    Priority scheduling is the goal of Problem 1-3. */
 tid_t thread_create(const char *name, int priority, thread_func *function, void *aux) {
     struct thread *t; // 새로 생성된 스레드
+
     // ******************************LINE ADDED****************************** //
-    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
     struct thread *now_running = thread_current(); // 지금 돌고 있는 스레드
     // *************************ADDED LINE ENDS HERE************************* //
+
     tid_t tid;
 
     ASSERT(function != NULL);
@@ -371,7 +369,7 @@ tid_t thread_create(const char *name, int priority, thread_func *function, void 
         return TID_ERROR;
 
     /* Initialize thread. */
-    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // 우선순위를 매개변수로 넘겨준다.
     // 스레드의 우선순위 범위는 0~63사이로 정의되며 기본값은 31이다.
     // Defined @ thread.h as PRI_MIN, PRI_DEFAULT, PRI_MAX
@@ -393,21 +391,20 @@ tid_t thread_create(const char *name, int priority, thread_func *function, void 
     thread_unblock(t);
 
     // ******************************LINE ADDED****************************** //
-    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
     // compare the priorities of the currently running thread and the newly inserted one.
     // Yield the CPU if the newly arriving thread has higher priority
     // TODO
-    //      void thread_unblock(struct thread *t)
+    //      void thread_unblock(struct thread *t) - DONE
     //          -> When the thread is unblocked, it is inserted to ready_list in the priority order.
     //          -> HINT
     //               When unblocking a thread, use "list_insert_ordered" instead of "list_push_back"
     //               -> list_insert_ordered 함수 만들기
-    //      void thread_yield(void)
+    //      void thread_yield(void) - DONE
     //          -> The current thread yields CPU and it is inserted to ready_list in priority order.
-    //      void thread_set_priority(int new_priority)
+    //      void thread_set_priority(int new_priority) - DONE
     //          -> Set priority of the current thread.
     //          -> Reorder the ready_list
-
     // 생성된 스레드(t), 지금 돌고 있는 스레드(now_running)비교
     // 새로 생성된 스레드가 우선순위 더 높으면 if문 TRUE -> Yield
     if (cmp_priority(&t->elem, &now_running->elem, NULL)) {
@@ -448,7 +445,7 @@ void thread_unblock(struct thread *t) {
     ASSERT(t->status == THREAD_BLOCKED);
 
     // ******************************LINE MODDED****************************** //
-    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
     // 우선순위 스케쥴링 구현위해 기존에 무조건 ready_list 맨 마지막에 넣는 list_push_back 함수 Block Comment 처리
     // 우선 순위 고려한 list_insert_ordered로 교체
     // Defined @ lib/kernel/list.c
@@ -513,13 +510,15 @@ void thread_yield(void) {
     ASSERT(!intr_context());
     // ******************************INTERRUPT DISABLED****************************** //
     old_level = intr_disable();
-    if (curr != idle_thread){
-        // Idle Condition Check
+    if (curr != idle_thread){ // Idle Condition Check
+
         // ******************************LINE MODDED****************************** //
-        // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+        // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+
         /*list_push_back(&ready_list, &curr->elem);*/
         list_insert_ordered(&ready_list, &curr->elem, &cmp_priority, NULL);
-        // *************************ADDED LINE ENDS HERE************************* //
+
+        // *************************MDDED LINE ENDS HERE************************* //
     }
     do_schedule(THREAD_READY);
     intr_set_level(old_level);
@@ -529,8 +528,12 @@ void thread_yield(void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority) {
     thread_current()->priority = new_priority;
+
     // ******************************LINE ADDED****************************** //
+    // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+
     test_max_priority();
+
     // *************************ADDED LINE ENDS HERE************************* //
 }
 
@@ -744,9 +747,7 @@ static void do_schedule(int status) {
     ASSERT(intr_get_level() == INTR_OFF);
     ASSERT(thread_current()->status == THREAD_RUNNING);
     while (!list_empty(&destruction_req)) {
-        struct thread *victim =
-                list_entry(list_pop_front(&destruction_req),
-        struct thread, elem);
+        struct thread *victim = list_entry(list_pop_front(&destruction_req), struct thread, elem);
         palloc_free_page(victim);
     }
     thread_current()->status = status;

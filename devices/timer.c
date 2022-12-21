@@ -90,7 +90,7 @@ void timer_sleep (int64_t ticks) {
 	ASSERT (intr_get_level () == INTR_ON);
 
     // ******************************LINE MODDED****************************** //
-    // Project 1 : Thread - Busy Waiting -> Sleep-Awake
+    // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // Busy Waiting 설명
     // timer_elapsed(start) : start 시점 부터 현재 시간이 얼마나 지났는지 반환
     // 즉, 지난 시간이 ticks 값 보다 작은 동안(while loop) 스레드는 계속 yield 상태 처리
@@ -131,7 +131,7 @@ static void timer_interrupt (struct intr_frame *args UNUSED){
     thread_tick ();
 
     // ******************************LINE ADDED****************************** //
-    // Project 1 : Thread - Busy Waiting -> Sleep-Awake
+    // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // sleep_list 와 global tick을 체크
     // 매 tick 마다 sleep_list에서 깨울 스레드가 있는지 확인하고,
     // thread_awake 함수를 호출하여 해당되는 스레드를 꺠운다.

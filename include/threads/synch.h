@@ -5,6 +5,8 @@
 #include <stdbool.h>
 
 /* A counting semaphore. */
+// 세마포어 구조체
+// unsigned 에 현재 상태를 가지고 있는다.
 struct semaphore {
 	unsigned value;             /* Current value. */
 	struct list waiters;        /* List of waiting threads. */
@@ -45,4 +47,10 @@ void cond_broadcast (struct condition *, struct lock *);
  * reference guide for more information.*/
 #define barrier() asm volatile ("" : : : "memory")
 
-#endif /* threads/synch.h */
+// ******************************LINE ADDED****************************** //
+// Project 1-2.2 : Thread - Priority Scheduling and Synchronization
+// LOCK, Semaphore, Condition Variable
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+// *************************ADDED LINE ENDS HERE************************* //
+
+#endif /* THREADS_SYNCH_H */

@@ -97,11 +97,9 @@ struct thread {
 	int priority;                       /* Priority. */
 
     // ******************************LINE ADDED****************************** //
-    // Project 1 : Thread - Busy Waiting -> Sleep-Awake
+    // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // 잠드는 프로세스가 꺠어날 tick을 저장할 변수
     int64_t wakeup_tick;
-    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
-    // TODO
     // *************************ADDED LINE ENDS HERE************************* //
 
 	/* Shared between thread.c and synch.c. */
@@ -156,12 +154,16 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 
 // ******************************LINE ADDED****************************** //
-// Project 1 : Thread - Busy Waiting -> Sleep-Awake
+// Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
 void thread_sleep(int64_t ticks);
 void thread_awake(int64_t ticks);
 void update_next_tick_to_awake(int64_t ticks);
 int64_t get_next_tick_to_awake(void);
-// Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+// Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+// -> Test Case
+// threads/priority-change
+// threads/priority-fifo
+// threads/priority-preempt
 void test_max_priority(void);
 bool cmp_priority(const struct list_elem *target, const struct list_elem *compare, void *aux UNUSED);
 // *************************ADDED LINE ENDS HERE************************* //
