@@ -11,6 +11,7 @@
 
 
 /* States in a thread's life cycle. */
+// 스레드의 상태를 정의한다. 4가지 상태를 가진다. Running , Ready, Blocked, Dying.
 enum thread_status {
 	THREAD_RUNNING,     /* Running thread. */
 	THREAD_READY,       /* Not running but ready to run. */
@@ -18,12 +19,13 @@ enum thread_status {
 	THREAD_DYING        /* About to be destroyed. */
 };
 
-/* Thread identifier type.
+/* Thread identifier type. 스레드 타입 정의.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */
+// 스레드의 우선순위 범위는 0~63사이로 정의되며 기본값은 31이다.
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
@@ -79,12 +81,14 @@ typedef int tid_t;
  * the `magic' member of the running thread's `struct thread' is
  * set to THREAD_MAGIC.  Stack overflow will normally change this
  * value, triggering the assertion. */
+
 /* The `elem' member has a dual purpose.  It can be an element in
  * the run queue (thread.c), or it can be an element in a
  * semaphore wait list (synch.c).  It can be used these two ways
  * only because they are mutually exclusive: only a thread in the
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
+
 struct thread {
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
@@ -96,6 +100,8 @@ struct thread {
     // Project 1 : Thread - Busy Waiting -> Sleep-Awake
     // 잠드는 프로세스가 꺠어날 tick을 저장할 변수
     int64_t wakeup_tick;
+    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // TODO
     // *************************ADDED LINE ENDS HERE************************* //
 
 	/* Shared between thread.c and synch.c. */
@@ -155,6 +161,9 @@ void thread_sleep(int64_t ticks);
 void thread_awake(int64_t ticks);
 void update_next_tick_to_awake(int64_t ticks);
 int64_t get_next_tick_to_awake(void);
+// Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+void test_max_priority(void);
+bool cmp_priority(const struct list_elem *target, const struct list_elem *compare, void *aux UNUSED);
 // *************************ADDED LINE ENDS HERE************************* //
 
 #endif /* threads/thread.h */

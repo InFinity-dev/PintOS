@@ -160,23 +160,48 @@ int64_t get_next_tick_to_awake(void){
     return next_tick_to_awake;
 }
 
-// 스레드를 sleep_list 에 삽입하고 blocked 상태로 만들어 대기상태로 재우는 함수.
-// 단, 현재 스레드가 idle 스레드가 아닌 경우여야 한다.
-// 스레드의 상태를 BLOCKED로 바꾸고 깨어나야 할 ticks을 저장해준다(알람 맞춰주고 재우기!)
-// sleep_list 에 삽입 후, awake 함수를 위한 tick update
-// >>>>> 질문사항
-// Q1. 찾아본 대부분의 레퍼런스들이 스레드를 Blocked (AKA.Sleep) 상태로 만들기 전에
-//     스레드가 idle 스레드가 아닌지 체크하는 조건분기를 걸어두는데
-//     왜 idle 스레드는 재우지 않아야 하는지 궁금합니다.
+ /* 스레드를 sleep_list 에 삽입하고 blocked 상태로 만들어 대기상태로 재우는 함수.
+  * 단, 현재 스레드가 idle 스레드가 아닌 경우여야 한다.
+  * 스레드의 상태를 BLOCKED로 바꾸고 깨어나야 할 ticks을 저장해준다(알람 맞춰주고 재우기!)
+  * sleep_list 에 삽입 후, awake 함수를 위한 tick update
+  * >>>>> 질문사항 */
+//     Q1. 찾아본 대부분의 레퍼런스들이 스레드를 Blocked (AKA.Sleep) 상태로 만들기 전에
+//         스레드가 idle 스레드가 아닌지 체크하는 조건분기를 걸어두는데
+//         왜 idle 스레드는 재우지 않아야 하는지 궁금합니다.
 //
-// Q2. 스켈레톤 코드 @thread/threads.c 의 do_schedule() 함수의 Comment 도 그렇고
-//     찾아본 레퍼런스 코드들에도 그렇고 스레드의 상태 변경에 개입하는 함수 구획안에서는
-//     인터럽트를 disable 시켜 두는데 해당 부분 관련해서 정확한 이유와 더 자세한 부분을 알고 싶습니다.
+//         >> A1. 조교 답변
+//         Idle이 도입된 이유는 CPU가 작업을 하고 있는지 아닌지 구분하는 로직을 만드는 것보다,
+//         "아무것도 하고 있지 않음"을 표현하는 스레드인 idle을 도입하는 것이 스레드를 더 간단하게 관리할 수 있기 때문입니다.
+//         즉 Idle은 "CPU가 쉬고 있음"을 표현하는 스레드이므로, block된다는 것이 말이 되지 않을 것 같습니다.
 //
-//     + Q2-1. do_schedule() 함수에 Comment 에서 명시적으로 해당 함수 내부에서
-//             printf() 함수 사용을 권장하지 않고 있는데 이는 printf() 함수 호출시 자체적으로
-//             인터럽트 발생 여지가 있어서 사용하지 말라고 하는건지? 아니면 I/O 관련 함수라 전체 성능에
-//             병목을 주기 때문인지가 궁금합니다.
+//         >> A1. 백승현 코치님 답변
+//         idle thread는 일종의 default thread인데, 그 외의 다른 스레드들이 다 blocked 상태일 때 돌아야하는 스레드가 있어야 하기 때문입니다.
+//         OS는 계속해서 동작하고 있어야 할 필요가 있을 거라 idle thread 라도 ready인 상태로 있어야 한다고 생각합니다.
+//         PintOS 에서는 idle thread의 경우 idle_tick++을 하고 있습니다. thread_print_stats에서 tick을 출력하고 있습니다.
+//         OS가 작동한 시간 같은 걸 알려 주는 용도인 듯 합니다.
+//
+//     Q2. 스켈레톤 코드 @thread/threads.c 의 do_schedule() 함수의 Comment 도 그렇고
+//         찾아본 레퍼런스 코드들에도 그렇고 스레드의 상태 변경에 개입하는 함수 구획안에서는
+//         인터럽트를 disable 시켜 두는데 해당 부분 관련해서 정확한 이유와 더 자세한 부분을 알고 싶습니다.
+//
+//         >> A2. 조교 답변
+//         스레드의 상태를 변경하는 동작은 중간에 interrupt로 인해 방해되지 않아야 합니다 (atomic하게 일어나야 합니다).
+//         그렇지 않으면 race condition이 발생해 스레드가 예기치 않은 동작을 할 수 있습니다.
+//
+//         >> A2. 백승현 코치님 답변
+//         atomic하게 돌아야 하는 로직은 interrupt를 disable하는데요. do_schedule 함수의 destruction_req 리스트는
+//         schedule 함수에서도 사용되는데 인터럽트가 disable되지 않는다면
+//         schedule함수로 인해 destruction_req의 무결성이 보장되지 않을 수 있을 거 같습니다.
+//
+//         + Q2-1. do_schedule() 함수에 Comment 에서 명시적으로 해당 함수 내부에서
+//                 printf() 함수 사용을 권장하지 않고 있는데 이는 printf() 함수 호출시 자체적으로
+//                 인터럽트 발생 여지가 있어서 사용하지 말라고 하는건지? 아니면 I/O 관련 함수라 전체 성능에
+//                 병목을 주기 때문인지가 궁금합니다.
+//
+//                 >> A2-1. 조교 답변
+//                    printf 함수는 내부적으로 출력과 관련된 semaphore를 조작하고 있기 때문에
+//                    다시 do_schedule을 호출하여 무한루프를 일으킬 위험이 있습니다.
+
 void thread_sleep(int64_t ticks){
     struct thread *cur;
     enum intr_level old_level;
@@ -228,6 +253,50 @@ void thread_awake(int64_t wakeup_tick){
         }
     }
 }
+
+// Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+void test_max_priority(void){
+
+    // 대기열이 비었을때 예외처리
+    if(list_empty(&ready_list)){
+        return;
+    }
+
+    int run_priority = thread_current()->priority;
+    struct list_elem *e = list_begin(&ready_list);
+    struct thread *t = list_entry(e, struct thread, elem);
+
+    // 새로 들어온 프로세스 우선순위가, 지금 돌고있는 프로세스 우선순위 보다 높다면
+    if (t->priority > run_priority) {
+        thread_yield();
+    }
+
+
+}
+
+// Compare Priority, 매개변수로 받은 스레드 두개를 비교하여,
+// 대상(target)스레드 우선순위가 더 높으면 TRUE(1)을 반환,
+// 비교(compare)스레드 우선순위가 더 높으면 FALSE(0)을 반환,
+
+/* Compares the value of two list elements A and B, given auxiliary data AUX.
+ * 두개의 요소 A,B를 매개변수로 받아서 A가 B보다 작으면 TRUE, A가 B보다 크거나 같으면 FALSE 반환
+ * Returns true if A is less than B, or false if A is greater than or equal to B.
+
+typedef bool list_less_func (const struct list_elem *a, const struct list_elem *b, void *aux);
+*/
+
+bool cmp_priority(const struct list_elem *target, const struct list_elem *compare, void *aux UNUSED){
+    struct thread *target_thread;
+    struct thread *compare_thread;
+
+    target_thread = list_entry(target, struct thread, elem);
+    compare_thread = list_entry(compare, struct thread, elem);
+
+    // target의 우선순위가 compare 보다 크면 TURE (1)
+    // target의 우선순위가 compare 작거나 같으면 FALSE (0)
+    return((target_thread->priority)>(compare_thread->priority)) ? true:false;
+}
+
 // *************************ADDED LINE ENDS HERE************************* //
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -287,7 +356,11 @@ void thread_print_stats(void) {
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
 tid_t thread_create(const char *name, int priority, thread_func *function, void *aux) {
-    struct thread *t;
+    struct thread *t; // 새로 생성된 스레드
+    // ******************************LINE ADDED****************************** //
+    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    struct thread *now_running = thread_current(); // 지금 돌고 있는 스레드
+    // *************************ADDED LINE ENDS HERE************************* //
     tid_t tid;
 
     ASSERT(function != NULL);
@@ -298,6 +371,10 @@ tid_t thread_create(const char *name, int priority, thread_func *function, void 
         return TID_ERROR;
 
     /* Initialize thread. */
+    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // 우선순위를 매개변수로 넘겨준다.
+    // 스레드의 우선순위 범위는 0~63사이로 정의되며 기본값은 31이다.
+    // Defined @ thread.h as PRI_MIN, PRI_DEFAULT, PRI_MAX
     init_thread(t, name, priority);
     tid = t->tid = allocate_tid();
 
@@ -314,6 +391,29 @@ tid_t thread_create(const char *name, int priority, thread_func *function, void 
 
     /* Add to run queue. */
     thread_unblock(t);
+
+    // ******************************LINE ADDED****************************** //
+    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // compare the priorities of the currently running thread and the newly inserted one.
+    // Yield the CPU if the newly arriving thread has higher priority
+    // TODO
+    //      void thread_unblock(struct thread *t)
+    //          -> When the thread is unblocked, it is inserted to ready_list in the priority order.
+    //          -> HINT
+    //               When unblocking a thread, use "list_insert_ordered" instead of "list_push_back"
+    //               -> list_insert_ordered 함수 만들기
+    //      void thread_yield(void)
+    //          -> The current thread yields CPU and it is inserted to ready_list in priority order.
+    //      void thread_set_priority(int new_priority)
+    //          -> Set priority of the current thread.
+    //          -> Reorder the ready_list
+
+    // 생성된 스레드(t), 지금 돌고 있는 스레드(now_running)비교
+    // 새로 생성된 스레드가 우선순위 더 높으면 if문 TRUE -> Yield
+    if (cmp_priority(&t->elem, &now_running->elem, NULL)) {
+            thread_yield();
+    }
+    // *************************ADDED LINE ENDS HERE************************* //
 
     return tid;
 }
@@ -346,7 +446,17 @@ void thread_unblock(struct thread *t) {
 
     old_level = intr_disable();
     ASSERT(t->status == THREAD_BLOCKED);
-    list_push_back(&ready_list, &t->elem);
+
+    // ******************************LINE MODDED****************************** //
+    // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+    // 우선순위 스케쥴링 구현위해 기존에 무조건 ready_list 맨 마지막에 넣는 list_push_back 함수 Block Comment 처리
+    // 우선 순위 고려한 list_insert_ordered로 교체
+    // Defined @ lib/kernel/list.c
+
+    /*list_push_back(&ready_list, &t->elem);*/
+    list_insert_ordered(&ready_list, &t->elem, &cmp_priority, NULL);
+    // *************************MODDED LINE ENDS HERE************************* //
+
     t->status = THREAD_READY;
     intr_set_level(old_level);
 }
@@ -401,17 +511,27 @@ void thread_yield(void) {
     enum intr_level old_level;
 
     ASSERT(!intr_context());
-
+    // ******************************INTERRUPT DISABLED****************************** //
     old_level = intr_disable();
-    if (curr != idle_thread)
-        list_push_back(&ready_list, &curr->elem);
+    if (curr != idle_thread){
+        // Idle Condition Check
+        // ******************************LINE MODDED****************************** //
+        // Project 1 : Thread - RoundRobin Scheduling -> Priority Scheduling
+        /*list_push_back(&ready_list, &curr->elem);*/
+        list_insert_ordered(&ready_list, &curr->elem, &cmp_priority, NULL);
+        // *************************ADDED LINE ENDS HERE************************* //
+    }
     do_schedule(THREAD_READY);
     intr_set_level(old_level);
+    // ******************************INTERRUPT RE-ENABLED****************************** //
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority) {
     thread_current()->priority = new_priority;
+    // ******************************LINE ADDED****************************** //
+    test_max_priority();
+    // *************************ADDED LINE ENDS HERE************************* //
 }
 
 /* Returns the current thread's priority. */
