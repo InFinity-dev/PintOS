@@ -210,7 +210,31 @@ void lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
+    // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    // LOCK이 Holder를 가지고 있는지. 즉, LOCK이 점유되고 있는지 Check.
+    // 다른 스레드가 LOCK을 점유하고 있으면 자신의 Priority를 Donation 하여
+    // 현재 LOCK을 점유하는 스레드가 우선적으로 LOCK을 반환하도록 한다.
+    // !CAUTION : lock_acquire 함수 내에서는 thread_current()는 LOCK을 얻고자 하는 스레드를 current로 취급한다.
+    //            또한, lock_acquire 함수를 Call 할 수 있었다는 것은 지금 lock->holder 스레드 보다 priority가 높다는 것을 의미
+    struct thread *curr = thread_current();
+
+    if (lock -> holder != NULL){
+        curr -> wait_on_lock = lock; // 현재 스레드가 LOCK을 기다리고 있다고 알려준다.
+        // donations 리스트에 넣어줄때는 FIFO(기부 순서)가 아닌 priority순으로 정렬하여 삽입
+        // -> donor들이 나갈때도 priority 순으로 나가기 때문에.
+        list_insert_ordered(&lock->holder->donations, &curr->donation_elem, cmp_donation_list_priority, NULL);
+        donate_priority();
+    }
+    // *************************ADDED LINE ENDS HERE************************* //
+
 	sema_down (&lock->semaphore);
+
+    // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    curr -> wait_on_lock = NULL;
+    // *************************ADDED LINE ENDS HERE************************* //
+
 	lock->holder = thread_current ();
 }
 
@@ -238,7 +262,14 @@ void lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
-	lock->holder = NULL;
+    // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    // Function declared in thread.c
+    remove_with_lock(lock);
+    refresh_priority();
+    // *************************ADDED LINE ENDS HERE************************* //
+
+    lock->holder = NULL;
 	sema_up (&lock->semaphore);
 }
 

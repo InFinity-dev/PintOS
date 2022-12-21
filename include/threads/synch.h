@@ -50,7 +50,9 @@ void cond_broadcast (struct condition *, struct lock *);
 // ******************************LINE ADDED****************************** //
 // Project 1-2.2 : Thread - Priority Scheduling and Synchronization
 // LOCK, Semaphore, Condition Variable
-bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+//bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+//bool cmp_donation_list_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 // *************************ADDED LINE ENDS HERE************************* //
 
 #endif /* THREADS_SYNCH_H */

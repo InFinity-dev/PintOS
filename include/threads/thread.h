@@ -97,6 +97,14 @@ struct thread {
 	int priority;                       /* Priority. */
 
     // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    int init_priority; // 최초에 할당받은 Priority를 담는 변수
+    struct lock *wait_on_lock; // 해당 스레드가 대기하고 있는 LOCK을 담아두는 LOCK 구조체 변수
+    struct list donations; // for Multiple Donation - Doner List
+    struct list_elem donation_elem; // for Multiple Donation - Donor Thread
+    // *************************ADDED LINE ENDS HERE************************* //
+
+    // ******************************LINE ADDED****************************** //
     // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // 잠드는 프로세스가 꺠어날 tick을 저장할 변수
     int64_t wakeup_tick;
@@ -159,13 +167,20 @@ void thread_sleep(int64_t ticks);
 void thread_awake(int64_t ticks);
 void update_next_tick_to_awake(int64_t ticks);
 int64_t get_next_tick_to_awake(void);
+
 // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
-// -> Test Case
-// threads/priority-change
-// threads/priority-fifo
-// threads/priority-preempt
 void test_max_priority(void);
 bool cmp_priority(const struct list_elem *target, const struct list_elem *compare, void *aux UNUSED);
+
+// Project 1-2.2 : Thread - Priority Scheduling and Synchronization
+// LOCK, Semaphore, Condition Variable
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+void donate_priority(void);
+void remove_with_lock(struct lock *lock);
+void refresh_priority(void);
+bool cmp_donation_list_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 // *************************ADDED LINE ENDS HERE************************* //
 
 #endif /* threads/thread.h */

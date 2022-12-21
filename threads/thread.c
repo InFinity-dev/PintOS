@@ -16,6 +16,16 @@
 #include "userprog/process.h"
 #endif
 
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+/* Based on gitbook PROJECT 1 : THREADS - Priority Scheduling
+ * "Implement priority donation. You will need to account for all different situations
+ * in which priority donation is required. Be sure to handle multiple donations,
+ * in which multiple priorities are donated to a single thread.
+ * You must also handle nested donation: if H is waiting on a lock that M holds and M is waiting on a lock
+ * that L holds, then both M and L should be boosted to H's priority.
+ * If necessary, you may impose a reasonable limit on depth of nested priority donation, such as 8 levels.*/
+#define NESTING_DEPTH 8
+
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
@@ -80,7 +90,7 @@ static struct list sleep_list;
 // 한 마디로 다음 알람 시간 설정!
 // Fallback https://stackoverflow.com/questions/12468281/should-i-use-long-long-or-int64-t-for-portable-code
 static int64_t next_tick_to_awake;
-static long long next_tick_to_awake;
+//static long long next_tick_to_awake;
 
 // *************************ADDED LINE ENDS HERE************************* //
 
@@ -458,6 +468,68 @@ void thread_unblock(struct thread *t) {
     intr_set_level(old_level);
 }
 
+// ******************************LINE ADDED****************************** //
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+// LOCK donation 과정중 donations 리스트에 들어가는 donation_elem 에 대한 compare 함수
+bool cmp_donation_list_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED){
+    return (list_entry(a, struct thread, donation_elem)->priority)
+    > (list_entry(b, struct thread, donation_elem)->priority);
+}
+
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+// 우선순위 Donation 함수 (key holder to current thread)
+void donate_priority(){
+    int depth;
+    struct thread *curr = thread_current();
+
+    /* Based on gitbook PROJECT 1 : THREADS - Priority Scheduling
+     * "Implement priority donation. You will need to account for all different situations
+     * in which priority donation is required. Be sure to handle multiple donations,
+     * in which multiple priorities are donated to a single thread.
+     * You must also handle nested donation: if H is waiting on a lock that M holds and M is waiting on a lock
+     * that L holds, then both M and L should be boosted to H's priority.
+     * If necessary, you may impose a reasonable limit on depth of nested priority donation, such as 8 levels.*/
+
+    for (depth = 0; depth < NESTING_DEPTH; depth++){
+        if (!curr -> wait_on_lock){
+            break;
+        }
+        struct thread *holder = curr -> wait_on_lock -> holder;
+        holder -> priority = curr -> priority;
+        curr = holder;
+    }
+}
+
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+void remove_with_lock(struct lock *lock){
+    struct list_elem *e;
+    struct thread *curr = thread_current ();
+
+    for (e = list_begin(&curr -> donations); e != list_end(&curr -> donations); e = list_next(e)){
+        struct thread *t = list_entry(e, struct thread, donation_elem);
+        if (t -> wait_on_lock == lock){
+            list_remove(&t -> donation_elem);
+        }
+    }
+}
+
+// Project 1-2.3 : Priority Inversion Problem - Priority Donation
+void refresh_priority(void){
+    struct thread *curr = thread_current();
+    curr -> priority = curr -> init_priority;
+
+    if (!(list_empty(&curr -> donations))){
+        list_sort(&curr -> donations, cmp_donation_list_priority, NULL);
+
+        struct thread *front = list_entry(list_front(&curr->donations), struct thread, donation_elem);
+        if (front -> priority > curr ->priority){
+            curr -> priority = front -> priority;
+        }
+    }
+}
+// *************************ADDED LINE ENDS HERE************************* //
+
+
 /* Returns the name of the running thread. */
 const char *thread_name(void) {
     return thread_current()->name;
@@ -624,6 +696,14 @@ static void init_thread(struct thread *t, const char *name, int priority) {
     t->tf.rsp = (uint64_t) t + PGSIZE - sizeof(void *);
     t->priority = priority;
     t->magic = THREAD_MAGIC;
+
+    // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    // Thread Struct has been MODDED for Priority Donation. Therefore inirialization have to modded aswell
+    t -> init_priority = priority; // 처음 할당받은 Priority를 담아둔다
+    t -> wait_on_lock = NULL; // 처음 스레드 init 되었을때는 아직 어떤 LOCK 을 대기할지 모름
+    list_init(&t->donations);
+    // *************************ADDED LINE ENDS HERE************************* //
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
