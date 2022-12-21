@@ -223,7 +223,9 @@ void lock_acquire (struct lock *lock) {
         curr -> wait_on_lock = lock; // 현재 스레드가 LOCK을 기다리고 있다고 알려준다.
         // donations 리스트에 넣어줄때는 FIFO(기부 순서)가 아닌 priority순으로 정렬하여 삽입
         // -> donor들이 나갈때도 priority 순으로 나가기 때문에.
-        list_insert_ordered(&lock->holder->donations, &curr->donation_elem, cmp_donation_list_priority, NULL);
+//***********TOUCHED FLAG
+        /*list_insert_ordered(&lock->holder->donations, &curr->donation_elem, cmp_donation_list_priority, NULL);*/
+        list_push_back(&lock->holder->donations, &curr->donation_elem);
         donate_priority();
     }
     // *************************ADDED LINE ENDS HERE************************* //
@@ -262,6 +264,9 @@ void lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
+    lock->holder = NULL;
+
+//***********TOUCHED FLAG
     // ******************************LINE ADDED****************************** //
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
     // Function declared in thread.c
@@ -269,7 +274,6 @@ void lock_release (struct lock *lock) {
     refresh_priority();
     // *************************ADDED LINE ENDS HERE************************* //
 
-    lock->holder = NULL;
 	sema_up (&lock->semaphore);
 }
 

@@ -272,19 +272,22 @@ void thread_awake(int64_t wakeup_tick){
 // threads/priority-fifo
 // threads/priority-preempt
 void test_max_priority(void){
-
+//***********TOUCHED FLAG
+/*
     // 대기열이 비었을때 예외처리
     if(list_empty(&ready_list)){
         return;
     }
-
     int run_priority = thread_current()->priority;
     struct list_elem *e = list_begin(&ready_list);
     struct thread *t = list_entry(e, struct thread, elem);
-
     // 새로 들어온 프로세스 우선순위가, 지금 돌고있는 프로세스 우선순위 보다 높다면
     if (t->priority > run_priority) {
         thread_yield();
+    }*/
+    if (!list_empty (&ready_list) && thread_current ()->priority
+            < list_entry (list_front (&ready_list), struct thread, elem)->priority){
+        thread_yield ();
     }
 }
 
@@ -417,7 +420,7 @@ tid_t thread_create(const char *name, int priority, thread_func *function, void 
     //          -> Reorder the ready_list
     // 생성된 스레드(t), 지금 돌고 있는 스레드(now_running)비교
     // 새로 생성된 스레드가 우선순위 더 높으면 if문 TRUE -> Yield
-    if (cmp_priority(&t->elem, &now_running->elem, NULL)) {
+    if (cmp_priority(&t->elem, &now_running->elem, 0)) {
             thread_yield();
     }
     // *************************ADDED LINE ENDS HERE************************* //
@@ -461,7 +464,7 @@ void thread_unblock(struct thread *t) {
     // Defined @ lib/kernel/list.c
 
     /*list_push_back(&ready_list, &t->elem);*/
-    list_insert_ordered(&ready_list, &t->elem, &cmp_priority, NULL);
+    list_insert_ordered(&ready_list, &t->elem, &cmp_priority, 0);
     // *************************MODDED LINE ENDS HERE************************* //
 
     t->status = THREAD_READY;
@@ -481,6 +484,8 @@ bool cmp_donation_list_priority (const struct list_elem *a, const struct list_el
 void donate_priority(){
     int depth;
     struct thread *curr = thread_current();
+//***********TOUCHED FLAG
+    int curr_priority = curr -> priority;
 
     /* Based on gitbook PROJECT 1 : THREADS - Priority Scheduling
      * "Implement priority donation. You will need to account for all different situations
@@ -494,32 +499,40 @@ void donate_priority(){
         if (!curr -> wait_on_lock){
             break;
         }
-        struct thread *holder = curr -> wait_on_lock -> holder;
+//***********TOUCHED FLAG
+        /*struct thread *holder = curr -> wait_on_lock -> holder;
         holder -> priority = curr -> priority;
-        curr = holder;
+        curr = holder;*/
+        curr = curr->wait_on_lock->holder;
+        curr -> priority = curr_priority;
     }
 }
 
 // Project 1-2.3 : Priority Inversion Problem - Priority Donation
 void remove_with_lock(struct lock *lock){
-    struct list_elem *e;
+//***********TOUCHED FLAG : THIS!!!
     struct thread *curr = thread_current ();
+    /*struct list_elem *e;*/
+    struct list_elem *e = list_begin(&curr -> donations);
 
-    for (e = list_begin(&curr -> donations); e != list_end(&curr -> donations); e = list_next(e)){
-        struct thread *t = list_entry(e, struct thread, donation_elem);
-        if (t -> wait_on_lock == lock){
-            list_remove(&t -> donation_elem);
+    for (e; e != list_end((&curr -> donations));){
+        struct thread *curr = list_entry(e, struct thread, donation_elem);
+        if (curr -> wait_on_lock == lock){
+            e = list_remove(e);
+        }else{
+            e = list_next(e);
         }
     }
 }
 
+// LOCK이 해제될때 Donation 받았던 Priority에 대한 처리가 필요하다!! (계속 해당 우선순위를 들고 있으면 안됨) -> priority 갱신
 // Project 1-2.3 : Priority Inversion Problem - Priority Donation
 void refresh_priority(void){
     struct thread *curr = thread_current();
     curr -> priority = curr -> init_priority;
 
     if (!(list_empty(&curr -> donations))){
-        list_sort(&curr -> donations, cmp_donation_list_priority, NULL);
+        list_sort(&curr -> donations, cmp_donation_list_priority, 0);
 
         struct thread *front = list_entry(list_front(&curr->donations), struct thread, donation_elem);
         if (front -> priority > curr ->priority){
@@ -588,7 +601,7 @@ void thread_yield(void) {
         // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
 
         /*list_push_back(&ready_list, &curr->elem);*/
-        list_insert_ordered(&ready_list, &curr->elem, &cmp_priority, NULL);
+        list_insert_ordered(&ready_list, &curr->elem, &cmp_priority, 0);
 
         // *************************MDDED LINE ENDS HERE************************* //
     }
@@ -604,6 +617,11 @@ void thread_set_priority(int new_priority) {
     // ******************************LINE ADDED****************************** //
     // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
 
+//***********TOUCHED FLAG : THIS!!!
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    // ******************************LINE ADDED****************************** //
+    refresh_priority();
+    // *************************ADDED LINE ENDS HERE************************* //
     test_max_priority();
 
     // *************************ADDED LINE ENDS HERE************************* //
@@ -700,9 +718,10 @@ static void init_thread(struct thread *t, const char *name, int priority) {
     // ******************************LINE ADDED****************************** //
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
     // Thread Struct has been MODDED for Priority Donation. Therefore inirialization have to modded aswell
+//***********TOUCHED FLAG
     t -> init_priority = priority; // 처음 할당받은 Priority를 담아둔다
-    t -> wait_on_lock = NULL; // 처음 스레드 init 되었을때는 아직 어떤 LOCK 을 대기할지 모름
     list_init(&t->donations);
+    t -> wait_on_lock = NULL; // 처음 스레드 init 되었을때는 아직 어떤 LOCK 을 대기할지 모름
     // *************************ADDED LINE ENDS HERE************************* //
 }
 
