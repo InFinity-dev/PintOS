@@ -272,7 +272,6 @@ void thread_awake(int64_t wakeup_tick){
 // threads/priority-fifo
 // threads/priority-preempt
 void test_max_priority(void){
-//***********TOUCHED FLAG
 /*
     // 대기열이 비었을때 예외처리
     if(list_empty(&ready_list)){
@@ -484,7 +483,6 @@ bool cmp_donation_list_priority (const struct list_elem *a, const struct list_el
 void donate_priority(){
     int depth;
     struct thread *curr = thread_current();
-//***********TOUCHED FLAG
     int curr_priority = curr -> priority;
 
     /* Based on gitbook PROJECT 1 : THREADS - Priority Scheduling
@@ -499,7 +497,6 @@ void donate_priority(){
         if (!curr -> wait_on_lock){
             break;
         }
-//***********TOUCHED FLAG
         /*struct thread *holder = curr -> wait_on_lock -> holder;
         holder -> priority = curr -> priority;
         curr = holder;*/
@@ -510,7 +507,6 @@ void donate_priority(){
 
 // Project 1-2.3 : Priority Inversion Problem - Priority Donation
 void remove_with_lock(struct lock *lock){
-//***********TOUCHED FLAG : THIS!!!
     struct thread *curr = thread_current ();
     /*struct list_elem *e;*/
     struct list_elem *e = list_begin(&curr -> donations);
@@ -612,12 +608,14 @@ void thread_yield(void) {
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority) {
-    thread_current()->priority = new_priority;
+// 만약 Priority Donation 구현 이후 이전에 PASS되었던 TEST CASE들이 FAIL난다면 높은 확률로
+// thread_current()->priority = new_priority; 를 수정 안해줬을 가능성이 크다.
+
+    thread_current()->init_priority = new_priority;
 
     // ******************************LINE ADDED****************************** //
     // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
 
-//***********TOUCHED FLAG : THIS!!!
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
     // ******************************LINE ADDED****************************** //
     refresh_priority();
@@ -717,8 +715,7 @@ static void init_thread(struct thread *t, const char *name, int priority) {
 
     // ******************************LINE ADDED****************************** //
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
-    // Thread Struct has been MODDED for Priority Donation. Therefore inirialization have to modded aswell
-//***********TOUCHED FLAG
+    // Thread Struct has been MODDED for Priority Donation. Therefore inirialization have to modded as well
     t -> init_priority = priority; // 처음 할당받은 Priority를 담아둔다
     list_init(&t->donations);
     t -> wait_on_lock = NULL; // 처음 스레드 init 되었을때는 아직 어떤 LOCK 을 대기할지 모름
