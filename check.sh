@@ -156,10 +156,20 @@ USERPROG=( args-none \
 #FILESYS=(  )
 
 ### 0. init ###
-make clean                                          # clean previous build
+echo "make clean: DO or NOT"
+echo "    y(yes) : make clean"
+echo "    ANY KEY : no"
+read CLN
+if [ "${CLN,,}" == "y" -o "${CLN,,}" == "yes" ]
+then
+    echo "clean previous build"
+    make clean -s                                   # clean previous build
+else
+    echo "use previous build"                       # use previous build
+fi
 
 ### 1. get dir ###
-echo "Enter project number to check: "
+echo "Enter PROJECT NUMBER to check: "              # show project list
 echo "    1: THREADS"
 echo "    2: USER PROGRAMS"
 echo "    3: VIRTUAL MEMORY"
@@ -172,7 +182,8 @@ then
 fi
 DIR=${PRJ[$PRJN-1]}
 echo "########## check directory: $DIR ##########"
-make -C $DIR                                        # make
+make -C $DIR -s                                     # make -silent
+
 
 ### 2. set test ###
 if [ $DIR == "threads" ]                            # project 1
@@ -188,25 +199,79 @@ then
 #then
 #    TST=(${FILESYS[@]})
 fi
-echo "Enter a number of test case to check"
-i=0                                                 # show test case list
-while [ $i -lt ${#TST[@]} ]
+echo "Enter TEST CASE NUMBER to check"              # show test case list
+i=0
+echo "    $i: TEST ALL (make check)"                # 0 for test all
+while [ $i -lt ${#TST[@]} ]                         # show each in loop
 do
     echo "    $(($i+1)): ${TST[$i]}"
     let i=i+1
 done
 read TSTN                                           # get test case number
-if [ $TSTN -lt 1 -o $TSTN -gt ${#TST[@]} ]          # check input error
+if [ $TSTN -lt 0 -o $TSTN -gt ${#TST[@]} ]          # check input error
 then
     echo "ERROR: wrong test case number!"
+    make clean -s                                   # clean build
     exit 2
+
+### 3-1. make check ###
+elif [ $TSTN -eq 0 ]                                # 0: test all
+then
+    echo "########## make check ##########"
+    make -C $DIR/ check -s                          # make check -silent
+    cat $DIR/build/result                           # show result
+    make clean -s                                   # clean build
+    exit 0
 fi
+
+### 3-2. run test case ###
 CHK=${TST[$(($TSTN-1))]}
 cd $DIR/build
-echo "########## check $CHK ##########"
-pintos -v -k -T 60 -m 20 -- -q run $CHK             # run selected test case
-# change flags if needed
+echo "##### pintos -v -k -- -q run $CHK #####"      # run selected test case
+## change flags if needed
 # usage: pintos [-h] [-v] [-k] [-T TIMEOUT] [-m MEMORY]
 #               [--fs-disk FS_DISK] [--swap-disk SWAP_DISK]
 #               [-p HOSTFNS] [-g GUESTFNS] [--mnts MNTS] [--gdb] [-t]
-echo ""
+
+# 3-2-1. project 1 ##
+if [ $PRJN -eq 1 ]
+then
+    pintos -v -k -- -q run $CHK
+fi
+
+## 3-2-2. project 2 ##
+if [ $PRJN -eq 2 ]
+then
+    if [ $TSTN -eq 1 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run $CHK
+    elif [ $TSTN -eq 2 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run 'args-single onearg'
+    elif [ $TSTN -eq 3 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run 'args-multiple some arguments for you!'
+    elif [ $TSTN -eq 4 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run 'args-single onearg'
+    elif [ $TSTN -eq 5 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run 'args-dbl-space two  spaces!'
+    elif [ $TSTN -ge 6 -o $TSTN -le 62 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/userprog/$CHK:$CHK -- -q -f run $CHK
+    elif [ $TSTN -ge 63 -o $TSTN -le 74 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/base/$CHK:$CHK -- -q -f run $CHK
+    elif [ $TSTN -eq 75 ]
+    then
+        pintos -v -k --fs-disk=10 -p tests/no-vm/$CHK:$CHK -- -q -f run $CHK
+    elif [ $TSTN -ge 76 ]
+    then
+        pintos -v -k --fs-disk=10 -q -thread-tests -f run $CHK
+    fi
+fi
+
+
+### 4. fin ###
+#make ../ clean -s                                   # clean build -silent
