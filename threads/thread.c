@@ -272,9 +272,8 @@ void thread_awake(int64_t wakeup_tick){
 // threads/priority-fifo
 // threads/priority-preempt
 void test_max_priority(void){
-/*
     // 대기열이 비었을때 예외처리
-    if(list_empty(&ready_list)){
+    if (list_empty(&ready_list) || intr_context()){
         return;
     }
     int run_priority = thread_current()->priority;
@@ -283,11 +282,11 @@ void test_max_priority(void){
     // 새로 들어온 프로세스 우선순위가, 지금 돌고있는 프로세스 우선순위 보다 높다면
     if (t->priority > run_priority) {
         thread_yield();
-    }*/
-    if (!list_empty (&ready_list) && thread_current ()->priority
+    }
+    /*if (!list_empty (&ready_list) && thread_current ()->priority
             < list_entry (list_front (&ready_list), struct thread, elem)->priority){
         thread_yield ();
-    }
+    }*/
 }
 
 // Project 1-2.1 : Thread - RoundRobin Scheduling -> Priority Scheduling
