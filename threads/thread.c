@@ -150,6 +150,7 @@ void thread_init(void) {
     initial_thread = running_thread ();
     init_thread(initial_thread, "main", PRI_DEFAULT);
     initial_thread->status = THREAD_RUNNING;
+    /*printf("allocate_tid called in thread_init\n"); //Debugging Project 2 : User Programs - Argument Passing*/
     initial_thread->tid = allocate_tid();
 }
 
@@ -272,7 +273,10 @@ void thread_awake(int64_t wakeup_tick){
 // threads/priority-fifo
 // threads/priority-preempt
 void test_max_priority(void){
+    /*printf("test_max_priority function called in somewhere\n"); //Debugging Project 2 : User Programs - Argument Passing*/
     // 대기열이 비었을때 예외처리
+    // intr_context OR 연산 통해 예외처리 없을시 userprog에서 Kernel Panic
+    // main(AKA.PintOS Main)@init.c -> allocate_tid -> lock_release -> sema_up -> test_max_priority 순으로 호출
     if (list_empty(&ready_list) || intr_context()){
         return;
     }
@@ -619,6 +623,8 @@ void thread_set_priority(int new_priority) {
     // ******************************LINE ADDED****************************** //
     refresh_priority();
     // *************************ADDED LINE ENDS HERE************************* //
+    /*printf("test_max_priority function called in thread_set_priority\n");
+    //Debugging Project 2 : User Programs - Argument Passing*/
     test_max_priority();
 
     // *************************ADDED LINE ENDS HERE************************* //
@@ -893,6 +899,7 @@ static tid_t allocate_tid(void) {
 
     lock_acquire(&tid_lock);
     tid = next_tid++;
+    /*printf("lock_release called in allocated_tid\n"); //Debugging Project 2 : User Programs - Argument Passing*/
     lock_release(&tid_lock);
 
     return tid;

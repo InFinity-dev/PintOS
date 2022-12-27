@@ -124,6 +124,7 @@ void sema_up(struct semaphore *sema) {
     // ******************************LINE ADDED****************************** //
     // Project 1-2.2 : Thread - Priority Scheduling and Synchronization
     // LOCK, Semaphore, Condition Variable
+    /*printf("test_max_priority function called in sema_up\n"); //Debugging Project 2 : User Programs - Argument Passing*/
     test_max_priority();
     // *************************ADDED LINE ENDS HERE************************* //
 
@@ -273,7 +274,7 @@ void lock_release (struct lock *lock) {
     remove_with_lock(lock);
     refresh_priority();
     // *************************ADDED LINE ENDS HERE************************* //
-
+    /*printf("sema_up called in lock_release function\n"); //Debugging Project 2 : User Programs - Argument Passing*/
 	sema_up (&lock->semaphore);
 }
 

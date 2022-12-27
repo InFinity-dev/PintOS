@@ -79,6 +79,7 @@ main (void) {
 
 	/* Initialize ourselves as a thread so we can use locks,
 	   then enable console locking. */
+    /*printf("thread_init called in main @init.c AKA pintos main\n"); //Debugging Project 2 : User Programs - Argument Passing*/
 	thread_init ();
 	console_init ();
 
