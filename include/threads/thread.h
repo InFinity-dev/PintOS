@@ -9,6 +9,12 @@
 #include "vm/vm.h"
 #endif
 
+// ******************************LINE ADDED****************************** //
+//Project 2-2-2 : User Programs - System Call - File Descriptor
+#include "threads/synch.h"
+#define FDT_PAGES 3
+#define FDCOUNT_LIMIT FDT_PAGES *(1 << 9) // Limiting fd_idx
+// *************************ADDED LINE ENDS HERE************************* //
 
 /* States in a thread's life cycle. */
 // 스레드의 상태를 정의한다. 4가지 상태를 가진다. Running , Ready, Blocked, Dying.
@@ -97,21 +103,47 @@ struct thread {
 	int priority;                       /* Priority. */
 
     // ******************************LINE ADDED****************************** //
-    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
-    int init_priority; // 최초에 할당받은 Priority를 담는 변수
-    struct lock *wait_on_lock; // 해당 스레드가 대기하고 있는 LOCK을 담아두는 LOCK 구조체 변수
-    struct list donations; // for Multiple Donation - Doner List
-    struct list_elem donation_elem; // for Multiple Donation - Donor Thread
-    // *************************ADDED LINE ENDS HERE************************* //
-
-    // ******************************LINE ADDED****************************** //
     // Project 1-1 : Alarm Clock - Busy Waiting -> Sleep-Awake
     // 잠드는 프로세스가 꺠어날 tick을 저장할 변수
     int64_t wakeup_tick;
     // *************************ADDED LINE ENDS HERE************************* //
 
-	/* Shared between thread.c and synch.c. */
-	struct list_elem elem;              /* List element. */
+    /* Shared between thread.c and synch.c. */
+    struct list_elem elem;              /* List element. */
+
+    // ******************************LINE ADDED****************************** //
+    // Project 1-2.3 : Priority Inversion Problem - Priority Donation
+    int init_priority; // 최초에 할당받은 Priority를 담는 변수
+
+    struct lock *wait_on_lock; // 해당 스레드가 대기하고 있는 LOCK을 담아두는 LOCK 구조체 변수
+    struct list donations; // for Multiple Donation - Doner List
+    struct list_elem donation_elem; // for Multiple Donation - Donor Thread
+    // *************************ADDED LINE ENDS HERE************************* //
+
+
+
+    // ******************************LINE ADDED****************************** //
+    // Project 2-2-1: User Programs - System Call - Basics
+    int exit_status; // System Call 구현시 상태 체크 위한 플래그 변수. Used in userprog/syscall.c
+
+    struct intr_frame parent_if;
+
+    struct list child_list;
+    struct list_elem child_elem;
+
+    struct semaphore wait_sema;
+    struct semaphore fork_sema;
+    struct semaphore free_sema;
+
+    // Project 2-2-2 : User Programs - System Call - File Descriptor
+    struct file **fd_table;
+    int fd_idx;
+
+    int stdin_count;
+    int stdout_count;
+
+    struct file *running;
+    // *************************ADDED LINE ENDS HERE************************* //
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -174,7 +206,7 @@ bool cmp_priority(const struct list_elem *target, const struct list_elem *compar
 
 // Project 1-2.2 : Thread - Priority Scheduling and Synchronization
 // LOCK, Semaphore, Condition Variable
-bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool cmp_sema_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 
 // Project 1-2.3 : Priority Inversion Problem - Priority Donation
 void donate_priority(void);

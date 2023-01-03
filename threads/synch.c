@@ -219,27 +219,26 @@ void lock_acquire (struct lock *lock) {
     // !CAUTION : lock_acquire 함수 내에서는 thread_current()는 LOCK을 얻고자 하는 스레드를 current로 취급한다.
     //            또한, lock_acquire 함수를 호출 할 수 있었다는 것은 지금 lock->holder 스레드 보다 priority가 높다는 것을 의미
     //            따라서 우선 순위의 대소 비교를 할 필요가 없다.
-    struct thread *curr = thread_current();
 
-    if (lock -> holder != NULL){
-        curr -> wait_on_lock = lock; // 현재 스레드가 LOCK을 기다리고 있다고 알려준다.
+    /*if (lock -> holder != NULL){*/
+    if (lock->holder){
+        thread_current() -> wait_on_lock = lock; // 현재 스레드가 LOCK을 기다리고 있다고 알려준다.
         // donations 리스트에 넣어줄때는 FIFO(기부 순서)가 아닌 priority순으로 정렬하여 삽입
         // -> donor들이 나갈때도 priority 순으로 나가기 때문에.
 
-        /*list_insert_ordered(&lock->holder->donations, &curr->donation_elem, cmp_donation_list_priority, NULL);*/
-        list_push_back(&lock->holder->donations, &curr->donation_elem);
+        list_insert_ordered(&lock->holder->donations, &thread_current()->donation_elem, &cmp_donation_list_priority, NULL);
+        /*list_push_back(&lock->holder->donations, &curr->donation_elem);*/
         donate_priority();
     }
     // *************************ADDED LINE ENDS HERE************************* //
 
 	sema_down (&lock->semaphore);
+    lock->holder = thread_current();
 
     // ******************************LINE ADDED****************************** //
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
-    curr -> wait_on_lock = NULL;
+    thread_current() -> wait_on_lock = NULL;
     // *************************ADDED LINE ENDS HERE************************* //
-
-	lock->holder = thread_current ();
 }
 
 /* Tries to acquires LOCK and returns true if successful or false on failure.
@@ -253,7 +252,7 @@ bool lock_try_acquire (struct lock *lock) {
 
 	success = sema_try_down (&lock->semaphore);
 	if (success)
-		lock->holder = thread_current ();
+		lock->holder = thread_current();
 	return success;
 }
 
@@ -266,13 +265,13 @@ void lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
-    lock->holder = NULL;
-
     // ******************************LINE ADDED****************************** //
     // Project 1-2.3 : Priority Inversion Problem - Priority Donation
     // Function declared in thread.c
     remove_with_lock(lock);
     refresh_priority();
+
+    lock->holder = NULL;
     // *************************ADDED LINE ENDS HERE************************* //
     /*printf("sema_up called in lock_release function\n"); //Debugging Project 2 : User Programs - Argument Passing*/
 	sema_up (&lock->semaphore);
@@ -284,7 +283,7 @@ void lock_release (struct lock *lock) {
 bool lock_held_by_current_thread (const struct lock *lock) {
 	ASSERT (lock != NULL);
 
-	return lock->holder == thread_current ();
+	return lock->holder == thread_current();
 }
 
 /* One semaphore in a list. */
@@ -340,6 +339,7 @@ void cond_wait (struct condition *cond, struct lock *lock) {
     // Project 1-2.2 : Thread - Priority Scheduling and Synchronization
     // LOCK, Semaphore, Condition Variable
 	/*list_push_back (&cond->waiters, &waiter.elem);*/
+    waiter.semaphore.priority = thread_current()->priority;
     list_insert_ordered(&cond->waiters, &waiter.elem, &cmp_sema_priority, NULL);
     // *************************ADDED LINE ENDS HERE************************* //
 	lock_release(lock);
@@ -364,7 +364,7 @@ void cond_signal (struct condition *cond, struct lock *lock UNUSED) {
         // ******************************LINE ADDED****************************** //
         // Project 1-2.2 : Thread - Priority Scheduling and Synchronization
         // LOCK, Semaphore, Condition Variable
-        list_sort(&cond -> waiters, &cmp_sema_priority, NULL);
+        /*list_sort(&cond -> waiters, &cmp_sema_priority, NULL);*/
         // *************************ADDED LINE ENDS HERE************************* //
 		sema_up(&list_entry (list_pop_front (&cond->waiters), struct semaphore_elem, elem)->semaphore);
     }
@@ -389,15 +389,17 @@ void cond_broadcast (struct condition *cond, struct lock *lock) {
 // LOCK, Semaphore, Condition Variable
 bool cmp_sema_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
 {
-    struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
-    struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
+    struct semaphore_elem *sema_a = list_entry(a, struct semaphore_elem, elem);
+    struct semaphore_elem *sema_b = list_entry(b, struct semaphore_elem, elem);
 
-    struct list_elem *sa_e = list_begin(&(sa->semaphore.waiters));
+    /*struct list_elem *sa_e = list_begin(&(sa->semaphore.waiters));
     struct list_elem *sb_e = list_begin(&(sb->semaphore.waiters));
 
     struct thread *sa_t = list_entry(sa_e, struct thread, elem);
     struct thread *sb_t = list_entry(sb_e, struct thread, elem);
 
-    return (sa_t->priority) > (sb_t->priority);
+    return (sa_t->priority) > (sb_t->priority);*/
+
+    return sema_a->semaphore.priority > sema_b->semaphore.priority;
 }
 // *************************ADDED LINE ENDS HERE************************* //

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="ubuntu" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" showDifferentInSync="false" showNewOnSourceInSync="false">
+  <component name="PublishConfigData" serverName="Ubuntu" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
-      <paths name="ubuntu">
+      <paths name="Ubuntu">
         <serverdata>
           <mappings>
             <mapping deploy="/PintOS" local="$PROJECT_DIR$" web="/" />

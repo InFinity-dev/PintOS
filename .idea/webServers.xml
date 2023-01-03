@@ -2,8 +2,8 @@
 <project version="4">
   <component name="WebServers">
     <option name="servers">
-      <webServer id="e97afb5c-3f9a-4366-928e-be287ea11709" name="ubuntu">
-        <fileTransfer rootFolder="/home/infinity" accessType="SFTP" host="10.211.55.3" port="22" sshConfigId="f4a44fb2-4126-4627-bced-dd13f86c960d" sshConfig="infinity@10.211.55.3:22 password">
+      <webServer id="0a29701e-6f90-452c-91a0-455f5a83ce2e" name="Ubuntu">
+        <fileTransfer rootFolder="/home/infinity" accessType="SFTP" host="10.211.55.8" port="22" sshConfigId="884fdef6-bf2c-4889-8546-5066c548a421" sshConfig="infinity@10.211.55.8:22 password">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>
